@@ -63,8 +63,8 @@ class Pix2PixModel(BaseModel):
         if self.isTrain:
             # define loss functions
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
-            #self.criterionL1 = torch.nn.L1Loss(
-            self.criterionL1 = networks.VGGLoss().to(self.device)
+            self.criterionL1 = torch.nn.L1Loss()
+            # self.criterionL1 = networks.VGGLoss().to(self.device)
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
@@ -91,11 +91,13 @@ class Pix2PixModel(BaseModel):
     def backward_D(self):
         """Calculate GAN loss for the discriminator"""
         # Fake; stop backprop to the generator by detaching fake_B
-        fake_AB = torch.cat((self.real_A, self.fake_B), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
+        #fake_AB = torch.cat((self.real_A, self.fake_B), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
+        fake_AB = self.fake_B
         pred_fake = self.netD(fake_AB.detach())
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
         # Real
-        real_AB = torch.cat((self.real_A, self.real_B), 1)
+        #real_AB = torch.cat((self.real_A, self.real_B), 1)
+        real_AB = self.real_B
         pred_real = self.netD(real_AB)
         self.loss_D_real = self.criterionGAN(pred_real, True)
         # combine loss and calculate gradients
@@ -105,7 +107,8 @@ class Pix2PixModel(BaseModel):
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         # First, G(A) should fake the discriminator
-        fake_AB = torch.cat((self.real_A, self.fake_B), 1)
+        #fake_AB = torch.cat((self.real_A, self.fake_B), 1)
+        fake_AB = self.fake_B
         pred_fake = self.netD(fake_AB)
         self.loss_G_GAN = self.criterionGAN(pred_fake, True)
         # Second, G(A) = B
